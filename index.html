@@ -3,13 +3,16 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
     <title>Package ‘plumbing’ documentation</title>
+    
     <link rel="stylesheet" href="_static/rtd.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
@@ -55,12 +58,9 @@
 <p>To install you can simply type:</p>
 <div class="highlight-python"><pre>$ sudo easy_install plumbing</pre>
 </div>
-<p>If you don&#8217;t have permission to install it like that, you can simply download the code and include the directory in your python path:</p>
-<div class="highlight-python"><pre>$ wget http://pypi.python.org/packages/source/e/plumbing/plumbing-1.0.0.tar.gz
-$ tar -xzf plumbing-1.0.0.tar.gz
-$ cd plumbing-1.0.0/
-$ sed -i "$ a\export PYTHONPATH=`pwd`/:\$PYTHONPATH" ~/.bashrc
-$ source ~/.bashrc</pre>
+<p>That&#8217;s it. However, if that doesn&#8217;t work because you don&#8217;t have sufficient permissions, you can simply install it somewhere else (for instance in your home):</p>
+<div class="highlight-python"><pre>$ cd ~
+$ pip install -e git+https://github.com/xapple/plumbing</pre>
 </div>
 </div>
 <span class="target" id="module-plumbing.cmd"></span><div class="section" id="warping-programs">
@@ -107,7 +107,7 @@ started, you would write:</p>
 </pre></div>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">parallel</span></tt> method will runs processes in different threads.
-Other methods exists for running commands in parralel.
+Other methods exists for running commands in parallel.
 For example, on systems using the LSF batch submission
 system, you can run commands via batch submission by using the
 <tt class="docutils literal"><span class="pre">lsf</span></tt> method:</p>
@@ -151,7 +151,7 @@ are captured and returned in the <tt class="docutils literal"><span class="pre">
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -178,8 +178,8 @@ are captured and returned in the <tt class="docutils literal"><span class="pre">
       </ul>
     </div>
     <div class="footer">
-      Last updated on Mar 05, 2012.
-    <a href="http://kopimi.com"><p>Kopimi</p></a>
+      Last updated on Aug 26, 2012.
+    <a href="http://opensource.org/licenses/MIT"><p>MIT licensed</p></a>
     </div>
   </body>
 </html>
