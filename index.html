@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.0',
+        VERSION:     '1.1.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -38,7 +38,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">plumbing v1.0.0</a> &raquo;</li> 
+        <li><a href="#">plumbing v1.1.1</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -59,8 +59,7 @@
 <div class="highlight-python"><pre>$ sudo easy_install plumbing</pre>
 </div>
 <p>That&#8217;s it. However, if that doesn&#8217;t work because you don&#8217;t have sufficient permissions, you can simply install it somewhere else (for instance in your home):</p>
-<div class="highlight-python"><pre>$ cd ~
-$ pip install -e git+https://github.com/xapple/plumbing</pre>
+<div class="highlight-python"><pre>$ easy_install --user plumbing</pre>
 </div>
 </div>
 <span class="target" id="module-plumbing.cmd"></span><div class="section" id="warping-programs">
@@ -68,13 +67,23 @@ $ pip install -e git+https://github.com/xapple/plumbing</pre>
 <p>The <tt class="docutils literal"><span class="pre">&#64;command</span></tt> decorator makes binding command line executables
 easy to write and easy to use.</p>
 <p>To wrap a program, write a function that takes whatever arguments
-you will need. The function should return a dictionary containing two keys,
-<tt class="docutils literal"><span class="pre">arguments</span></tt> and optionally <tt class="docutils literal"><span class="pre">return_value</span></tt>.
-Firstly, <tt class="docutils literal"><span class="pre">arguments</span></tt> should point to a list of strings which is
-the actual command and arguments to be executed (e.g. <tt class="docutils literal"><span class="pre">[&quot;touch&quot;,</span> <span class="pre">filename]</span></tt>).
-Secondly, <tt class="docutils literal"><span class="pre">return_value</span></tt> can point to a value to return, or a callable
-object which takes a <tt class="docutils literal"><span class="pre">CommandOutput</span></tt> object and returns the value
-that will be passed back to the user when this program is run.</p>
+you will need to run the program like if it where on the shell.
+The function should return a dictionary containing several keys:</p>
+<blockquote>
+<div><ul class="simple">
+<li>mandatory: <tt class="docutils literal"><span class="pre">arguments</span></tt></li>
+<li>optional: <tt class="docutils literal"><span class="pre">stdin</span></tt></li>
+<li>optional: <tt class="docutils literal"><span class="pre">return_value</span></tt>.</li>
+</ul>
+</div></blockquote>
+<p>Firstly, <tt class="docutils literal"><span class="pre">arguments</span></tt> should be a list of strings which is
+the actual command and arguments to be executed (e.g. <tt class="docutils literal"><span class="pre">[&quot;touch&quot;,</span> <span class="pre">filename]</span></tt>).</p>
+<p>Secondly, <tt class="docutils literal"><span class="pre">stdin</span></tt> should be a value to feed the subprocess once it is launched.</p>
+<p>Thirdly, <tt class="docutils literal"><span class="pre">return_value</span></tt> should be a value to return, or a callable
+object which takes <tt class="docutils literal"><span class="pre">(stdout,strerr)</span></tt> as parameters and returns the value
+that will be passed back to the user when this program is run.
+You can also simply specify <tt class="docutils literal"><span class="pre">&quot;stdout&quot;</span></tt> to have the output of the
+process returned directly.</p>
 <p>For example, to wrap <tt class="docutils literal"><span class="pre">touch</span></tt>, we write a one argument function that
 takes the filename of the file to touch, and apply the <tt class="docutils literal"><span class="pre">&#64;command</span></tt>
 decorator to it:</p>
@@ -92,6 +101,30 @@ decorator to it:</p>
 </div>
 <p>The value returned by touch is <tt class="docutils literal"><span class="pre">&quot;myfile&quot;</span></tt>, the name of
 the touched file.</p>
+<p>A more complicated example would include binding the BLASTP algorithm:</p>
+<div class="highlight-python"><pre>from plumbing import command
+
+@command
+def blastp(database, sequences, **kwargs):
+    """Will launch the 'blastp' algorithm using the NCBI executable.
+
+   :param database: The path to the database to blast against.
+   :param sequences: A fasta formated string.
+   :param **kwargs: Extra parameters that will be passed to the executable
+                    For instance, you could specify "e=1e-20".
+   :returns: A list of top hits in blast format.
+   """
+    return {"arguments": ["blastall", "-p", "blastp", "-d" database] +
+                         [a for k,v in kwargs.items() for a in ('-'+k,v)],
+            "stdin": sequences)
+            "return_value": 'stdout'}</pre>
+</div>
+<p>As shown above, we can now call this function directly:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">hits</span> <span class="o">=</span> <span class="n">blastp</span><span class="p">(</span><span class="s">&quot;swissprot&quot;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;proteins.fasta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The value returned by blastp is a long string containing all the
+results from the BLASTP algorithm.</p>
 <p>Often you want to call a function, but not block when it returns
 so you can run several in parallel. <tt class="docutils literal"><span class="pre">&#64;command</span></tt> also creates a
 method <tt class="docutils literal"><span class="pre">parallel</span></tt> which does this. The return value is a
@@ -100,27 +133,27 @@ Future object with a single method: <tt class="docutils literal"><span class="pr
 same value that you would get from calling the function directly.
 So, to touch two files, and not block until both commands have
 started, you would write:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">touch</span><span class="o">.</span><span class="n">parallel</span><span class="p">(</span><span class="s">&quot;myfile1&quot;</span><span class="p">)</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">touch</span><span class="o">.</span><span class="n">parallel</span><span class="p">(</span><span class="s">&quot;myfile2&quot;</span><span class="p">)</span>
-<span class="n">a</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
-<span class="n">b</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">blastp</span><span class="o">.</span><span class="n">parallel</span><span class="p">(</span><span class="s">&quot;nr&quot;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;fasta1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">e</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">blastp</span><span class="o">.</span><span class="n">parallel</span><span class="p">(</span><span class="s">&quot;nr&quot;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;fasta2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">e</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">)</span>
+<span class="n">hitsA</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="n">hitsB</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">parallel</span></tt> method will runs processes in different threads.
+<p>The <tt class="docutils literal"><span class="pre">parallel</span></tt> method will runs processes without blocking.
 Other methods exists for running commands in parallel.
-For example, on systems using the LSF batch submission
+For example, on systems using the SLURM batch submission
 system, you can run commands via batch submission by using the
-<tt class="docutils literal"><span class="pre">lsf</span></tt> method:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">touch</span><span class="o">.</span><span class="n">lsf</span><span class="p">(</span><span class="s">&quot;myfile&quot;</span><span class="p">)</span>
-<span class="n">f</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<tt class="docutils literal"><span class="pre">slurm</span></tt> method and optionally adding the time and account info:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">p</span> <span class="o">=</span> <span class="n">blastp</span><span class="o">.</span><span class="n">slurm</span><span class="p">(</span><span class="s">&quot;nr&quot;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;fasta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">time</span><span class="o">=</span><span class="s">&#39;1:00:00&#39;</span><span class="p">)</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Some programs do not accept an output file as an argument and only
-write to <tt class="docutils literal"><span class="pre">stdout</span></tt>. Alternately, you might need to capture
-<tt class="docutils literal"><span class="pre">stderr</span></tt> to a file. All the methods of <tt class="docutils literal"><span class="pre">&#64;command</span></tt> accept
-keyword arguments <tt class="docutils literal"><span class="pre">stdout</span></tt> and <tt class="docutils literal"><span class="pre">stderr</span></tt> to specify files to
-write these streams to. If they are omitted, then both streams
-are captured and returned in the <tt class="docutils literal"><span class="pre">CommandOutput</span></tt> object.</p>
+<p>On systems using the LSF batch submission system, you can run
+commands via batch submission by using the <tt class="docutils literal"><span class="pre">lsf</span></tt> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">p</span> <span class="o">=</span> <span class="n">blastp</span><span class="o">.</span><span class="n">lsf</span><span class="p">(</span><span class="s">&quot;nr&quot;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;fasta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">queue</span><span class="o">=</span><span class="s">&#39;long&#39;</span><span class="p">)</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -174,11 +207,11 @@ are captured and returned in the <tt class="docutils literal"><span class="pre">
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">plumbing v1.0.0</a> &raquo;</li> 
+        <li><a href="#">plumbing v1.1.1</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      Last updated on Aug 26, 2012.
+      Last updated on Sep 28, 2012.
     <a href="http://opensource.org/licenses/MIT"><p>MIT licensed</p></a>
     </div>
   </body>
